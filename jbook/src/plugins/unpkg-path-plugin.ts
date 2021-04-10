@@ -13,10 +13,10 @@ export const unpkgPathPlugin = () => {
         if (args.path.includes('./') || args.path.includes('../') ) {
           return {
             namespace: 'a',
-            path: new URL(args.path, args.importer + '/').href
+            path: new URL(args.path, 'https://unpkg.com' + args.resolveDir + '/').href,
           }
         }
-//74
+
         return {
           namespace: 'a',
           path: `https://unpkg.com/${args.path}`
@@ -29,19 +29,22 @@ export const unpkgPathPlugin = () => {
 
       build.onLoad({ filter: /.*/ }, async (args: any) => {
         console.log('onLoad', args);
-
+//this way we can check any version we like  
+//import React,{useState} from 'react@16.0.0'
         if (args.path === 'index.js') {
           return {
             loader: 'jsx',
             contents: `
-              const message = require('medium-test-pkg')
-              console.log(message);
+            import React,{useState} from 'react'
+              console.log(React,useState);
             `,
           };
-        } const {data} = await axios.get(args.path)
+        } const {data, request} = await axios.get(args.path)
+        //console.log(request)
         return {
           loader: 'jsx',
-          contents: data
+          contents: data,
+          resolveDir: new URL('./', request.responseURL).pathname
         }
       });
     },
