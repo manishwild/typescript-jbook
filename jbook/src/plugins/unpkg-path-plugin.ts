@@ -12,22 +12,38 @@ const fileCache = localForage.createInstance({
 //   console.log(color)
 // })()
 
-export const unpkgPathPlugin = () => {
+export const unpkgPathPlugin = (inputCode: string) => {
   return {
     name: 'unpkg-path-plugin',
     setup(build: esbuild.PluginBuild) {
-      build.onResolve({ filter: /.*/ }, async (args: any) => {
-        console.log('onResolve', args);
-        if (args.path === 'index.js') {
-          return { path: args.path, namespace: 'a' };
-        } 
-
-        if (args.path.includes('./') || args.path.includes('../') ) {
-          return {
-            namespace: 'a',
-            path: new URL(args.path, 'https://unpkg.com' + args.resolveDir + '/').href,
-          }
+      //this code is replacement of 1 if statement
+      // handle root entry file of 'index.js'
+      build.onResolve({ filter: /(^index\.js$)/},() => {
+        return { path: 'index.js', namespace: 'a'}
+      })
+      
+      // handle realtives path in a module
+      //this code is replacement of 2 if statement from down
+      build.onResolve({ filter: /^\.+\// }, (args: any) => {
+        return {
+          namespace: 'a',
+          path: new URL(args.path, 'https://unpkg.com' + args.resolveDir + '/').href,
         }
+      })
+
+      build.onResolve({ filter: /.*/ }, async (args: any) => {
+        // console.log('onResolve', args);
+        // 1
+        // if (args.path === 'index.js') {
+        //   return { path: args.path, namespace: 'a' };
+        // } 
+        //2
+        // if (args.path.includes('./') || args.path.includes('../') ) {
+        //   return {
+        //     namespace: 'a',
+        //     path: new URL(args.path, 'https://unpkg.com' + args.resolveDir + '/').href,
+        //   }
+        // }
 
         return {
           namespace: 'a',
@@ -46,10 +62,11 @@ export const unpkgPathPlugin = () => {
         if (args.path === 'index.js') {
           return {
             loader: 'jsx',
-            contents: `
-            import React,{useState} from 'react'
-              console.log(React,useState);
-            `,
+            contents: inputCode,
+             // `
+            // import React,{useState} from 'react'
+            //   console.log(React,useState);
+            // `,
           };
         } 
         // check to see if we have already fetched this file
